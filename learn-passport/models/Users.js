@@ -4,20 +4,27 @@ const jwt = require('jsonwebtoken');
 
 const { Schema } = mongoose;
 
-const UserSchema = new Schema({
+const UsersSchema = new Schema({
   email: String,
   hash: String,
   salt: String,
 });
 
-UserSchema.method.setPassword = function(password) {
+UsersSchema.methods.setPassword = function(password) {
   this.salt = crypto.randomBytes(16).toString('hex');
   this.hash = crypto
     .pbkdf2Sync(password, this.salt, 10000, 512, 'sha512')
     .toString('hex');
 };
 
-UserSchema.method.generateJWT = function() {
+UsersSchema.methods.validatePassword = function(password) {
+  const hash = crypto
+    .pbkdf2Sync(password, this.salt, 10000, 512, 'sha512')
+    .toString('hex');
+  return this.hash === hash;
+};
+
+UsersSchema.methods.generateJWT = function() {
   const today = new Date();
   const expirationDate = new Date(today);
   expirationDate.setDate(today.getDate() + 60);
@@ -32,7 +39,7 @@ UserSchema.method.generateJWT = function() {
   );
 };
 
-UserSchema.methods.toAuthJSON = function() {
+UsersSchema.methods.toAuthJSON = function() {
   return {
     _id: this._id,
     email: this.email,
@@ -40,4 +47,4 @@ UserSchema.methods.toAuthJSON = function() {
   };
 };
 
-mongoose.model('Users', UserSchema);
+mongoose.model('Users', UsersSchema);

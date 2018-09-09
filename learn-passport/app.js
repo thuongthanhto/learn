@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const bodyParser = require('body-parser');
+var methodOverride = require('method-override');
 const session = require('express-session');
 const cors = require('cors');
 const mongoose = require('mongoose');
@@ -18,13 +19,25 @@ const app = express();
 //Configure our app
 app.use(cors());
 app.use(require('morgan')('dev'));
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(
+	bodyParser.urlencoded({
+		extended: true,
+	})
+);
 app.use(bodyParser.json());
+app.use(methodOverride());
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(session({ secret: 'passport-tutorial', cookie: { maxAge: 60000 }, resave: false, saveUninitialized: false }));
+app.use(
+	session({
+		secret: 'passport-tutorial',
+		cookie: { maxAge: 60000 },
+		resave: false,
+		saveUninitialized: false,
+	})
+);
 
-if(!isProduction) {
-  app.use(errorHandler());
+if (!isProduction) {
+	app.use(errorHandler());
 }
 
 //Configure Mongoose
@@ -37,28 +50,28 @@ require('./config/passport');
 app.use(require('./routes'));
 
 //Error handlers & middlewares
-if(!isProduction) {
-  app.use((err, req, res) => {
-    res.status(err.status || 500);
+if (!isProduction) {
+	app.use(function(err, req, res, next) {
+		res.status(err.status || 500);
 
-    res.json({
-      errors: {
-        message: err.message,
-        error: err,
-      },
-    });
-  });
+		res.json({
+			errors: {
+				message: err.message,
+				error: err,
+			},
+		});
+	});
+} else {
+	app.use(function(err, req, res, next) {
+		res.status(err.status || 500);
+
+		res.json({
+			errors: {
+				message: err.message,
+				error: {},
+			},
+		});
+	});
 }
-
-app.use((err, req, res) => {
-  res.status(err.status || 500);
-
-  res.json({
-    errors: {
-      message: err.message,
-      error: {},
-    },
-  });
-});
 
 app.listen(8000, () => console.log('Server running on http://localhost:8000/'));
